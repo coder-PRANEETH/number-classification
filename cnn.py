@@ -38,8 +38,9 @@ y_test  = load_mnist_labels("t10k-labels.idx1-ubyte")
 X_train = X_train.astype("float32") / 255.0
 X_test  = X_test.astype("float32") / 255.0
 
-X_train = X_train[..., None]
+X_train = X_train[0:5000,...]
 X_test  = X_test[..., None]
+print(X_train.shape)
 
 
 
@@ -66,7 +67,7 @@ for e in range(epochs):
      totalloss=0
      for idx in range(len(X_train)):
 
-        image = X_train[idx, :, :, 0]
+        image = X_train[idx,:,:]
         label = y_train[idx]
         for i in range(26):
             for j in range(26):
@@ -174,6 +175,11 @@ for e in range(epochs):
 
         filter1 -= lr * dfilter1
         filter2 -= lr * dfilter2
-     print(totalloss)
+        if(idx%1000 == 0) : print(totalloss)
 
 print(filter2)
+
+
+
+np.savez("weights.npz",filter1 = filter1,filter2=filter2,W1=W1,W2=W2,B1=B1,B2=B2)
+
