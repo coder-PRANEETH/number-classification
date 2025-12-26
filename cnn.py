@@ -1,6 +1,9 @@
 import numpy as np
 
 
+# -----------------------------
+# MNIST LOADING (UNCHANGED)
+# -----------------------------
 def load_mnist_images(path):
     with open(path, 'rb') as f:
         magic = int.from_bytes(f.read(4), 'big')
@@ -8,178 +11,199 @@ def load_mnist_images(path):
         rows = int.from_bytes(f.read(4), 'big')
         cols = int.from_bytes(f.read(4),"big")
 
-        assert magic == 2051, "Invalid IDX3 image file"
+        assert magic == 2051
 
         data = f.read(num_images * rows * cols)
-
         images = np.frombuffer(data, dtype=np.uint8)
         images = images.reshape(num_images, rows, cols)
-
         return images
+
+
 def load_mnist_labels(path):
     with open(path, 'rb') as f:
         magic = int.from_bytes(f.read(4), 'big')
         num_labels = int.from_bytes(f.read(4), 'big')
 
-        assert magic == 2049, "Invalid IDX1 label file"
-
+        assert magic == 2049
         labels = np.frombuffer(f.read(num_labels), dtype=np.uint8)
-
         return labels
+
+
+# -----------------------------
+# DATA
+# -----------------------------
 X_train = load_mnist_images("train-images.idx3-ubyte")
 y_train = load_mnist_labels("train-labels.idx1-ubyte")
 
-X_test  = load_mnist_images("t10k-images.idx3-ubyte")
-y_test  = load_mnist_labels("t10k-labels.idx1-ubyte")
-
-
-
-
 X_train = X_train.astype("float32") / 255.0
-X_test  = X_test.astype("float32") / 255.0
-
-X_train = X_train[0:5000,...]
-X_test  = X_test[..., None]
-print(X_train.shape)
+X_train = X_train[:5000]   # keep small for speed
 
 
+# -----------------------------
+# HYPERPARAMETERS
+# -----------------------------
+lr = 0.001        # 🔧 CHANGED: smaller LR for stability
+epochs = 5
+eps = 1e-12
 
-lr =0.01
-epochs =  5
 
-eps =1e-12
-
-labels = np.zeros(shape=(1,10))
-
-
+# -----------------------------
+# PARAMETERS
+# -----------------------------
 filter1 = np.random.uniform(0,1,(3,3))
 filter2 = np.random.uniform(0,1,(3,3))
+
 W1 = np.random.randn(144,64) * 0.01
 W2 = np.random.randn(64,10) * 0.01
 
-B1 = np.zeros(shape=(1,64) )
-B2 = np.zeros(shape=(1,10) )
-out1 = np.zeros((26,26))
-out2 = np.zeros((24,24))
-pooled = np.zeros((12,12))
+B1 = np.zeros((1,64))
+B2 = np.zeros((1,10))
 
+
+# -----------------------------
+# TRAINING LOOP
+# -----------------------------
 for e in range(epochs):
-     totalloss=0
-     for idx in range(len(X_train)):
 
-        image = X_train[idx,:,:]
-        label = y_train[idx]
+    totalloss = 0.0
+
+    for idx in range(len(X_train)):
+
+        image = X_train[idx]
+        label = y_train[idx]   # ✅ FIX: correct label
+
+        # -----------------------------
+        # FORWARD PASS
+        # -----------------------------
+        out1 = np.zeros((26,26))
         for i in range(26):
             for j in range(26):
                 out1[i,j] = np.sum(image[i:i+3, j:j+3] * filter1)
 
         A1 = np.maximum(0, out1)
 
-
+        out2 = np.zeros((24,24))
         for i in range(24):
             for j in range(24):
                 out2[i,j] = np.sum(A1[i:i+3, j:j+3] * filter2)
 
-
+        pooled = np.zeros((12,12))
         for i in range(0,24,2):
             for j in range(0,24,2):
                 pooled[i//2, j//2] = np.max(out2[i:i+2, j:j+2])
 
-        neu_input = pooled.flatten()
-        neu_input = neu_input.reshape(1,144)
+        neu_input = pooled.reshape(1,144)
+
+        Z1 = neu_input @ W1 + B1
+        A2 = np.maximum(0, Z1)
+
+        Z2 = A2 @ W2 + B2
+
+        # softmax (stable)
+        Z2 -= np.max(Z2)
+        exp_Z = np.exp(Z2)
+        y_pred = exp_Z / np.sum(exp_Z)
 
 
+        # -----------------------------
+        # LOSS
+        # -----------------------------
+        labels = np.zeros((1,10))        # ✅ FIX: reset one-hot
+        labels[0, label] = 1
+        y_true = labels
+
+        loss = -np.log(np.clip(y_pred[0, label], eps, 1-eps))
+        totalloss += loss
 
 
-        Z1 = neu_input@W1+B1
-
-        AN1 = np.maximum(0,Z1)
-
-        Z2 = AN1@W2+B2
-
-
-        Z2_stable = Z2 - np.max(Z2, axis=1, keepdims=True)
-        exp_Z = np.exp(Z2_stable)
-        y_pred = exp_Z / np.sum(exp_Z, axis=1, keepdims=True)
-
-
-
-
-        label = y_train[0]
-        labels[0][label]=1
-        y_true= labels
-        loss = -np.log(np.clip(y_pred[0, label], eps, 1 - eps))
-        totalloss+=loss
-        dZ2 = y_pred-y_true
-
-        dW2 = AN1.T @ dZ2
+        # -----------------------------
+        # BACKPROP (FC)
+        # -----------------------------
+        dZ2 = y_pred - y_true
+        dW2 = A2.T @ dZ2
         dB2 = dZ2
 
-        dAN1 = dZ2 @ W2.T 
-        dZ1 = dAN1*(Z1>0)
+        dA2 = dZ2 @ W2.T
+        dZ1 = dA2 * (Z1 > 0)
+
         dW1 = neu_input.T @ dZ1
         dB1 = dZ1
 
-        dback = dZ1 @ W1.T 
-        back=dback.reshape(12,12)
+        dback = dZ1 @ W1.T
+        back = dback.reshape(12,12)
 
-        W2 -= lr * dW2
-        B2 -= lr * dB2
-        W1 -= lr * dW1
-        B1 -= lr * dB1
 
-        dout2 = np.zeros(shape=(24,24))
-
+        # -----------------------------
+        # BACKPROP (POOL)
+        # -----------------------------
         dout2 = np.zeros_like(out2)
-
         for i in range(12):
             for j in range(12):
-                                                        
                 window = out2[i*2:i*2+2, j*2:j*2+2]
+                idx_max = np.unravel_index(np.argmax(window), window.shape)
+                dout2[i*2 + idx_max[0], j*2 + idx_max[1]] = back[i,j]
 
-                                                        
-                max_idx = np.unravel_index(np.argmax(window), window.shape)
 
-                                                        
-                dout2[i*2 + max_idx[0], j*2 + max_idx[1]] = back[i, j]
-
-                
-        dfilter2 = np.zeros_like(filter2)    
+        # -----------------------------
+        # BACKPROP (CONV2)
+        # -----------------------------
+        dfilter2 = np.zeros_like(filter2)   # ✅ FIX: reset every image
         for u in range(3):
             for v in range(3):
                 for i in range(24):
                     for j in range(24):
-                        dfilter2[u, v] += dout2[i, j] * A1[i+u, j+v]
+                        dfilter2[u,v] += dout2[i,j] * A1[i+u, j+v]
+
+        dA1 = np.zeros_like(A1)
+        for i in range(24):
+            for j in range(24):
+                for u in range(3):
+                    for v in range(3):
+                        dA1[i+u, j+v] += dout2[i,j] * filter2[u,v]
+
+        dout1 = dA1 * (out1 > 0)
 
 
-        dA1 = np.zeros_like(A1)                                                   
-
-        for i in range(24):                                                       
-            for j in range(24):                                                   
-                for u in range(3):                                                    
-                    for v in range(3):                                                
-                        dA1[i+u, j+v] += dout2[i, j] * filter2[u, v]
-
-
-        dout1 = dA1 * (out1 > 0)  
-
-
-        dfilter1 = np.zeros_like(filter1)    
-
-        for u in range(3):    
+        # -----------------------------
+        # BACKPROP (CONV1)
+        # -----------------------------
+        dfilter1 = np.zeros_like(filter1)   # ✅ FIX: reset every image
+        for u in range(3):
             for v in range(3):
-                for i in range(26):                                                       
-                    for j in range(26): 
+                for i in range(26):
+                    for j in range(26):
+                        dfilter1[u,v] += dout1[i,j] * image[i+u, j+v]
 
-                        dfilter1[u,v] += dout1[i,j] * image[i+u,j+v]
 
+        # -----------------------------
+        # UPDATE
+        # -----------------------------
+        W2 -= lr * dW2
+        B2 -= lr * dB2
+        W1 -= lr * dW1
+        B1 -= lr * dB1
         filter1 -= lr * dfilter1
         filter2 -= lr * dfilter2
-        if(idx%1000 == 0) : print(totalloss)
-
-print(filter2)
 
 
+        # -----------------------------
+        # LOGGING
+        # -----------------------------
+        if idx % 1000 == 0 and idx > 0:
+            print(f"Epoch {e+1} | Step {idx} | Avg Loss: {totalloss/idx:.4f}")
 
-np.savez("weights.npz",filter1 = filter1,filter2=filter2,W1=W1,W2=W2,B1=B1,B2=B2)
+    print(f"Epoch {e+1} finished | Avg Loss: {totalloss/len(X_train):.4f}")
 
+
+# -----------------------------
+# SAVE
+# -----------------------------
+np.savez(
+    "weights.npz",
+    filter1=filter1,
+    filter2=filter2,
+    W1=W1,
+    W2=W2,
+    B1=B1,
+    B2=B2
+)
