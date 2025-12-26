@@ -36,7 +36,7 @@ X_train = load_mnist_images("train-images.idx3-ubyte")
 y_train = load_mnist_labels("train-labels.idx1-ubyte")
 
 X_train = X_train.astype("float32") / 255.0
-X_train = X_train[:5000]   # keep small for speed
+X_train = X_train[:50000]   # keep small for speed
 
 
 # -----------------------------
@@ -70,7 +70,7 @@ for e in range(epochs):
     for idx in range(len(X_train)):
 
         image = X_train[idx]
-        label = y_train[idx]   # ✅ FIX: correct label
+        label = y_train[idx]                          
 
         # -----------------------------
         # FORWARD PASS
@@ -108,7 +108,7 @@ for e in range(epochs):
         # -----------------------------
         # LOSS
         # -----------------------------
-        labels = np.zeros((1,10))        # ✅ FIX: reset one-hot
+        labels = np.zeros((1,10))                               
         labels[0, label] = 1
         y_true = labels
 
@@ -147,7 +147,7 @@ for e in range(epochs):
         # -----------------------------
         # BACKPROP (CONV2)
         # -----------------------------
-        dfilter2 = np.zeros_like(filter2)   # ✅ FIX: reset every image
+        dfilter2 = np.zeros_like(filter2)                          
         for u in range(3):
             for v in range(3):
                 for i in range(24):
@@ -167,7 +167,7 @@ for e in range(epochs):
         # -----------------------------
         # BACKPROP (CONV1)
         # -----------------------------
-        dfilter1 = np.zeros_like(filter1)   # ✅ FIX: reset every image
+        dfilter1 = np.zeros_like(filter1)                          
         for u in range(3):
             for v in range(3):
                 for i in range(26):
@@ -189,7 +189,7 @@ for e in range(epochs):
         # -----------------------------
         # LOGGING
         # -----------------------------
-        if idx % 1000 == 0 and idx > 0:
+        if idx % 10000 == 0 and idx > 0:
             print(f"Epoch {e+1} | Step {idx} | Avg Loss: {totalloss/idx:.4f}")
 
     print(f"Epoch {e+1} finished | Avg Loss: {totalloss/len(X_train):.4f}")
