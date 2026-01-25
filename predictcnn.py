@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# ---------- Load MNIST ----------
+                                                              
 def load_mnist_images(path):
     with open(path, 'rb') as f:
         magic = int.from_bytes(f.read(4), 'big')
@@ -29,7 +29,7 @@ X_test = load_mnist_images("t10k-images.idx3-ubyte").astype("float32") / 255.0
 y_test = load_mnist_labels("t10k-labels.idx1-ubyte")
 
 
-# ---------- Load weights ----------
+                                                              
 data = np.load("weights.npz")
 W1, B1 = data["W1"], data["B1"]
 W2, B2 = data["W2"], data["B2"]
@@ -37,7 +37,7 @@ filter1, filter2 = data["filter1"], data["filter2"]
 
 print(filter1,filter2)
 
-# ---------- Evaluation ----------
+                                                              
 num_samples = 500
 num_classes = 10
 
@@ -49,7 +49,7 @@ for h in range(num_samples):
     image = X_test[h]
     label = y_test[h]
 
-    # ----- Conv 1 -----
+                                                                  
     out1 = np.zeros((26, 26))
     for i in range(26):
         for j in range(26):
@@ -57,19 +57,19 @@ for h in range(num_samples):
 
     A1 = np.maximum(0, out1)
 
-    # ----- Conv 2 -----
+                                                                  
     out2 = np.zeros((24, 24))
     for i in range(24):
         for j in range(24):
             out2[i, j] = np.sum(A1[i:i+3, j:j+3] * filter2)
 
-    # ----- MaxPool -----
+                                                                  
     pooled = np.zeros((12, 12))
     for i in range(0, 24, 2):
         for j in range(0, 24, 2):
             pooled[i//2, j//2] = np.max(out2[i:i+2, j:j+2])
 
-    # ----- Dense -----
+                                                                  
     x = pooled.flatten().reshape(1, 144)
 
     Z1 = x @ W1 + B1
@@ -91,11 +91,11 @@ y_true = np.array(y_true)
 y_pred = np.array(y_pred)
 
 
-# ---------- Accuracy ----------
+                                                              
 accuracy = np.mean(y_true == y_pred)
 
 
-# ---------- Precision (macro) ----------
+                                                              
 precision_per_class = []
 
 for c in range(num_classes):

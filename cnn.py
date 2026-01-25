@@ -1,9 +1,9 @@
 import numpy as np
 
 
-# -----------------------------
-# MNIST LOADING (UNCHANGED)
-# -----------------------------
+                                                                  
+                                                                  
+                                                                  
 def load_mnist_images(path):
     with open(path, 'rb') as f:
         magic = int.from_bytes(f.read(4), 'big')
@@ -29,27 +29,27 @@ def load_mnist_labels(path):
         return labels
 
 
-# -----------------------------
-# DATA
-# -----------------------------
+                                                                  
+                                                                  
+                                                                  
 X_train = load_mnist_images("train-images.idx3-ubyte")
 y_train = load_mnist_labels("train-labels.idx1-ubyte")
 
 X_train = X_train.astype("float32") / 255.0
-X_train = X_train[:50000]   # keep small for speed
+X_train = X_train[:50000]                                                                     
 
 
-# -----------------------------
-# HYPERPARAMETERS
-# -----------------------------
-lr = 0.001        # 🔧 CHANGED: smaller LR for stability
+                                                                  
+                                                                  
+                                                                  
+lr = 0.001                                                                          
 epochs = 5
 eps = 1e-12
 
 
-# -----------------------------
-# PARAMETERS
-# -----------------------------
+                                                                  
+                                                                  
+                                                                  
 filter1 = np.random.uniform(0,1,(3,3))
 filter2 = np.random.uniform(0,1,(3,3))
 
@@ -60,9 +60,9 @@ B1 = np.zeros((1,64))
 B2 = np.zeros((1,10))
 
 
-# -----------------------------
-# TRAINING LOOP
-# -----------------------------
+                                                                  
+                                                                  
+                                                                  
 for e in range(epochs):
 
     totalloss = 0.0
@@ -72,9 +72,9 @@ for e in range(epochs):
         image = X_train[idx]
         label = y_train[idx]                          
 
-        # -----------------------------
-        # FORWARD PASS
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         out1 = np.zeros((26,26))
         for i in range(26):
             for j in range(26):
@@ -99,15 +99,15 @@ for e in range(epochs):
 
         Z2 = A2 @ W2 + B2
 
-        # softmax (stable)
+                                                                          
         Z2 -= np.max(Z2)
         exp_Z = np.exp(Z2)
         y_pred = exp_Z / np.sum(exp_Z)
 
 
-        # -----------------------------
-        # LOSS
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         labels = np.zeros((1,10))                               
         labels[0, label] = 1
         y_true = labels
@@ -116,9 +116,9 @@ for e in range(epochs):
         totalloss += loss
 
 
-        # -----------------------------
-        # BACKPROP (FC)
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         dZ2 = y_pred - y_true
         dW2 = A2.T @ dZ2
         dB2 = dZ2
@@ -133,9 +133,9 @@ for e in range(epochs):
         back = dback.reshape(12,12)
 
 
-        # -----------------------------
-        # BACKPROP (POOL)
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         dout2 = np.zeros_like(out2)
         for i in range(12):
             for j in range(12):
@@ -144,9 +144,9 @@ for e in range(epochs):
                 dout2[i*2 + idx_max[0], j*2 + idx_max[1]] = back[i,j]
 
 
-        # -----------------------------
-        # BACKPROP (CONV2)
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         dfilter2 = np.zeros_like(filter2)                          
         for u in range(3):
             for v in range(3):
@@ -164,9 +164,9 @@ for e in range(epochs):
         dout1 = dA1 * (out1 > 0)
 
 
-        # -----------------------------
-        # BACKPROP (CONV1)
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         dfilter1 = np.zeros_like(filter1)                          
         for u in range(3):
             for v in range(3):
@@ -175,9 +175,9 @@ for e in range(epochs):
                         dfilter1[u,v] += dout1[i,j] * image[i+u, j+v]
 
 
-        # -----------------------------
-        # UPDATE
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         W2 -= lr * dW2
         B2 -= lr * dB2
         W1 -= lr * dW1
@@ -186,18 +186,18 @@ for e in range(epochs):
         filter2 -= lr * dfilter2
 
 
-        # -----------------------------
-        # LOGGING
-        # -----------------------------
+                                                                          
+                                                                          
+                                                                          
         if idx % 10000 == 0 and idx > 0:
             print(f"Epoch {e+1} | Step {idx} | Avg Loss: {totalloss/idx:.4f}")
 
     print(f"Epoch {e+1} finished | Avg Loss: {totalloss/len(X_train):.4f}")
 
 
-# -----------------------------
-# SAVE
-# -----------------------------
+                                                                  
+                                                                  
+                                                                  
 np.savez(
     "weights.npz",
     filter1=filter1,
