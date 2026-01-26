@@ -87,7 +87,7 @@ while True:
         pred = np.argmax(probs)
 
         print(f"\nPredicted Digit: {pred}")
-        print("Class Probabilities:", probs.flatten())
+        
         cv2.imshow("28x28 Input", resized)
 
                                                

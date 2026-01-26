@@ -36,7 +36,7 @@ X_train = load_mnist_images("train-images.idx3-ubyte")
 y_train = load_mnist_labels("train-labels.idx1-ubyte")
 
 X_train = X_train.astype("float32") / 255.0
-X_train = X_train[:50000]                                                                     
+X_train = X_train[:5000]                                                                     
 
 
                                                                   
@@ -189,8 +189,8 @@ for e in range(epochs):
                                                                           
                                                                           
                                                                           
-        if idx % 10000 == 0 and idx > 0:
-            print(f"Epoch {e+1} | Step {idx} | Avg Loss: {totalloss/idx:.4f}")
+        if idx % 1000 == 0 and idx > 0:
+            print(f"Epoch {e+1} | Step {idx*10} | Avg Loss: {totalloss/idx:.4f}")
 
     print(f"Epoch {e+1} finished | Avg Loss: {totalloss/len(X_train):.4f}")
 

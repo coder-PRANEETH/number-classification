@@ -1,5 +1,5 @@
 import numpy as np
-
+import matplotlib.pyplot as plt
 
                                                               
 def load_mnist_images(path):
@@ -109,6 +109,11 @@ for c in range(num_classes):
 
 precision = np.mean(precision_per_class)
 
+plt.bar(range(num_classes), precision_per_class)
+plt.xlabel("Class")
+plt.ylabel("Precision")
+plt.title("Precision per Class")
+plt.show()
 
 print(f"Accuracy on {num_samples} samples : {accuracy:.4f}")
 print(f"Precision (macro)               : {precision:.4f}")
